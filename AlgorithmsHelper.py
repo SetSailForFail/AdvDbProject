@@ -10,13 +10,15 @@ class Algorithm:
 
         self.tables = tables
         self.reverse_index(yannakis)
-        self.file_name = output_file
+        self.output = open(output_file, 'w')
 
         if algo == 'index_join':
             self.run_index_join()
 
         if algo == 'merge_join':
             self.run_merge_join()
+
+        self.output.close()
 
 
     def reverse_index(self, yannakis):
@@ -143,6 +145,6 @@ class Algorithm:
             for followsSubject in self.tables['follows'][followsObject] 
         )
 
-        with open(self.file_name, 'w') as file:
-            for row in generator:
-                file.write(str(row) + '\n')
+
+        for row in generator:
+            self.output.write(str(row) + '\n')
