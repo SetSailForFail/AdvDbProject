@@ -2,19 +2,19 @@ from collections import defaultdict
 
 class PropertiesHelper:
 
-    def __init__(self, file_path, dict_path, properties):
+    def __init__(self, file_path, properties):
 
         self.tables = {property_name: defaultdict(list) for property_name in properties}
         self.rdf_dict = defaultdict()
-        self.small_data = self.is_small_data(file_path)
-        self.load_rdf_dict(dict_path)
+        self.rdf_dict_reversed = defaultdict()
         self.get_property_tables(file_path)
+        self.reverse_rdf_dict()
 
 
     def get_property_tables(self, file_path):
         """
-        populates each property table with object being the key 
-        and the corresponding subjects representing the values
+        populates each property table (given by properties in the constructor) with object being the index
+        and the corresponding subjects the values of that index
         """
         with open (file_path, 'r') as file:
 
@@ -22,31 +22,20 @@ class PropertiesHelper:
 
                 subj, prop, *obj = line.rstrip('\n.').split()
                 obj = obj[0]
+                subj = self.remove_prefix(subj)
+                obj = self.remove_prefix(obj)
                 prop_without_prefix = self.remove_prefix(prop)
 
                 if prop_without_prefix in self.tables:
 
-                    if self.small_data:
-                        subj, obj = self.remove_prefix(subj), self.remove_prefix(obj)
-
+                    self.add_to_dict(subj, obj)
                     subj_int, obj_int = self.rdf_dict[subj], self.rdf_dict[obj]
                     self.tables[prop_without_prefix][obj_int].append(subj_int)
 
 
-    def is_small_data(self, file_path):
-        """
-        checks if we have to load the small, 100k, dataset or the bigger ones,
-        because their formats differ
-        """
-
-        if 'M' in str(file_path):
-            return False
-        return True
-
     def remove_prefix(self, s):
         """
-        removes any prefixes in the watdiv data, so that we can easily find the corresponding
-        integer in the self.rdf_dict
+        removes any prefixes in the watdiv data, for better readability.
         """
 
         if s[-1] == '>':
@@ -62,18 +51,21 @@ class PropertiesHelper:
             return s[s.find(':') + 1:]
 
 
-    def load_rdf_dict(self, dict_path):
+    def add_to_dict(self, subj, obj):
         """
-        loads the provided dictionary, that maps each unique singlet of the RDF data
-        to an integer. We remove the prefixes, so that we can also map the 100k
-        data to an integer
+        maps each subject and object to an unique integer
         """
 
-        with open (dict_path, 'r') as file:
-            for line in file:
-                key, value = line.rstrip('\n.').rsplit(':', 1)
+        if subj not in self.rdf_dict:
+            self.rdf_dict[subj] = len(self.rdf_dict) + 1
+        if obj not in self.rdf_dict:
+            self.rdf_dict[obj] = len(self.rdf_dict) + 1
 
-                if self.small_data:
-                    key = self.remove_prefix(key)
+    def reverse_rdf_dict(self):
+        """
+        reverse the initial rdf dict, so we can map each integer to the original 
+        value for collecting the results
+        """
 
-                self.rdf_dict[key]=int(value)
+        for key, value in self.rdf_dict.items():
+            self.rdf_dict_reversed[value] = key

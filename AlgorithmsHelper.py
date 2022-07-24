@@ -2,13 +2,14 @@ from collections import defaultdict
 
 class Algorithm:
 
-    def __init__(self, algo, yannakis, tables, output_file):
+    def __init__(self, algo, yannakis, property_helper, output_file):
         """
         in this version of the algorithm, the property tables are in the form of
         object: array[subject]
         """
 
-        self.tables = tables
+        self.tables= property_helper.tables
+        self.rdf_dict = property_helper.rdf_dict_reversed
         self.reverse_index(yannakis)
         self.output = open(output_file, 'w')
 
@@ -70,7 +71,8 @@ class Algorithm:
 
     def run_merge_join(self):
         """
-        run a merge join on each intermediate computated result
+        run a merge join on each intermediate computated result given the 
+        join attributes from the problem
         """
 
 
@@ -91,7 +93,8 @@ class Algorithm:
 
     def run_index_join(self):
         """
-        run an index on each intermediate computated result
+        perform an index join on each intermediate computated result given the 
+        join attributes from the problem
         """
 
         # subjects of friendOf = objects of followsf
@@ -133,9 +136,10 @@ class Algorithm:
     
     def collect_result(self, objects_of_hasReview):
         """
-        here we are simply collecting each row and save the row to a file
+        here we are simply collecting each element of the generator, map the integer to the
+        original value and store it to the file
         """
-        
+
         generator = (
             (followsSubject, followsObject, friendOfObject, likesObject, hasReviewObject)
             for hasReviewObject in objects_of_hasReview 
@@ -146,5 +150,6 @@ class Algorithm:
         )
 
 
-        for row in generator:
-            self.output.write(str(row) + '\n')
+        for element in generator:
+            result = " ".join([self.rdf_dict[singlet] for singlet in element])
+            self.output.write(result + '\n')
